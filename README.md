@@ -7,6 +7,7 @@ Loki Django Logger is a lightweight and efficient logger designed to send logs t
 - Configurable timeout to prevent delayed requests
 - Middleware for capturing request/response data with latency tracking
 - Customizable tags for better log organization in Loki
+- Robust error handling with retries and exponential backoff
 
 ## Installation
 ```bash
@@ -14,7 +15,16 @@ pip install loki-django-logger
 ```
 
 ## Configuration
-### 1. Add Middleware
+### 1. Import the Logger and Middleware
+In your Django project, import the required components in `settings.py`:
+
+```python
+import os  # Required for environment variables
+from loki_django_logger.logger import LokiLoggerHandler
+from loki_django_logger.middleware import LokiLoggerMiddleware
+```
+
+### 2. Add Middleware
 Add the following middleware to your `settings.py`:
 
 ```python
@@ -24,7 +34,7 @@ MIDDLEWARE = [
 ]
 ```
 
-### 2. Add Logging Configuration
+### 3. Add Logging Configuration
 Add the Loki logger configuration in `settings.py`:
 
 ```python
@@ -35,9 +45,9 @@ LOGGING = {
         "loki": {
             "level": "INFO",
             "class": "loki_django_logger.logger.LokiLoggerHandler",
-            "loki_url": "http://localhost:3100/loki/api/v1/push",
+            "loki_url": os.getenv("LOKI_URL", "http://localhost:3100/loki/api/v1/push"),
             "tags": {"app": "django", "environment": "production"},
-            "timeout": "1",  # Timeout in seconds
+            "timeout": os.getenv("LOGGING_TIMEOUT", "1"),
         },
     },
     "root": {
@@ -47,7 +57,7 @@ LOGGING = {
 }
 ```
 
-### 3. Environment Variables (Optional)
+### 4. Environment Variables (Optional)
 For improved flexibility, consider using environment variables for sensitive information like the `loki_url` or timeout.
 
 ```env
@@ -62,6 +72,7 @@ Once integrated, logs will automatically be sent to your Loki instance with the 
 - Response status code
 - Time taken for the request
 - Client IP address
+- User-agent headers for better client identification
 
 ## Example Log Output
 ```json
@@ -70,7 +81,8 @@ Once integrated, logs will automatically be sent to your Loki instance with the 
     "method": "POST",
     "status_code": 200,
     "duration": 0.123,
-    "client_ip": "192.168.1.100"
+    "client_ip": "192.168.1.100",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
 }
 ```
 
@@ -79,3 +91,4 @@ Contributions are welcome! Feel free to open issues or submit pull requests.
 
 ## License
 This project is licensed under the MIT License.
+

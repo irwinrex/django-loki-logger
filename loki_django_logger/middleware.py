@@ -1,3 +1,4 @@
+# middleware.py
 import logging
 import time
 import asyncio
@@ -6,12 +7,6 @@ from django.utils.deprecation import MiddlewareMixin
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
-
-def get_timeout():
-    try:
-        return max(0.1, float(settings.LOGGING["handlers"]["loki"].get("timeout", 1)))
-    except ValueError:
-        return 1.0
 
 class LokiLoggerMiddleware(MiddlewareMixin):
     def process_request(self, request):
@@ -25,6 +20,7 @@ class LokiLoggerMiddleware(MiddlewareMixin):
             "status_code": response.status_code,
             "duration": duration,
             "client_ip": request.META.get("REMOTE_ADDR", "Unknown"),
+            "user_agent": request.META.get("HTTP_USER_AGENT", "Unknown"),
         }
 
         logger.info("API Request Log", extra=log_data)
@@ -37,7 +33,7 @@ class LokiLoggerMiddleware(MiddlewareMixin):
             "method": request.method,
             "error": str(exception),
         }
-        logger.error("API Exception Log", extra=log_data)
+        logger.error("API Exception Log", exc_info=True, extra=log_data)
         asyncio.create_task(self.send_to_loki(log_data))
 
     async def send_to_loki(self, log_data):

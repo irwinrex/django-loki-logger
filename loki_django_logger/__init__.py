@@ -1,3 +1,4 @@
+# __init__.py
 from .logger import LokiLoggerHandler
 from .middleware import LokiLoggerMiddleware
 

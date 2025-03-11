@@ -1,3 +1,4 @@
+# settings.py
 MIDDLEWARE = [
     ...,
     "loki_django_logger.middleware.LokiLoggerMiddleware",

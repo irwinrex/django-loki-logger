@@ -1,8 +1,17 @@
+# Logger.py
 import logging
 import asyncio
 import httpx
 import time
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
+
+def get_timeout():
+    try:
+        return max(0.1, float(settings.LOGGING["handlers"]["loki"].get("timeout", 1)))
+    except ValueError:
+        return 1.0
 
 class LokiLoggerHandler(logging.Handler):
     def __init__(self, loki_url, tags=None):
@@ -25,16 +34,22 @@ class LokiLoggerHandler(logging.Handler):
         asyncio.create_task(self.send_to_loki(payload))
 
     async def send_to_loki(self, payload):
-        try:
-            async with httpx.AsyncClient() as client:
-                await asyncio.wait_for(
-                    client.post(
-                        self.loki_url,
-                        json=payload,
-                        headers={"Content-Type": "application/json"},
+        retries = 3
+        for attempt in range(retries):
+            try:
+                async with httpx.AsyncClient() as client:
+                    await asyncio.wait_for(
+                        client.post(
+                            self.loki_url,
+                            json=payload,
+                            headers={"Content-Type": "application/json"},
+                            timeout=get_timeout()
+                        ),
                         timeout=get_timeout()
-                    ),
-                    timeout=get_timeout()
-                )
-        except (httpx.RequestError, asyncio.TimeoutError) as e:
-            logger.error(f"Failed to send logs to Loki: {e}")
+                    )
+                    return
+            except (httpx.RequestError, asyncio.TimeoutError) as e:
+                logger.warning(f"[Attempt {attempt + 1}/{retries}] Failed to send logs to Loki: {e}")
+                await asyncio.sleep(2 ** attempt)
+
+        logger.error(f"All {retries} retries failed. Logs not sent to Loki.")
