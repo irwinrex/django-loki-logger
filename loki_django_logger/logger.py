@@ -1,7 +1,6 @@
 # logger.py
 import logging
-import asyncio
-import httpx
+import requests
 import time
 from django.conf import settings
 
@@ -26,26 +25,22 @@ class LokiLoggerHandler(logging.Handler):
                 }
             ]
         }
-        loop = asyncio.get_event_loop()
-        loop.create_task(self.send_to_loki(payload))
+        self.send_to_loki(payload)
 
-    async def send_to_loki(self, payload):
+    def send_to_loki(self, payload):
         retries = 3
         for attempt in range(retries):
             try:
-                async with httpx.AsyncClient() as client:
-                    await asyncio.wait_for(
-                        client.post(
-                            self.loki_url,
-                            json=payload,
-                            headers={"Content-Type": "application/json"},
-                            timeout=self.timeout
-                        ),
-                        timeout=self.timeout
-                    )
+                response = requests.post(
+                    self.loki_url,
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                    timeout=self.timeout
+                )
+                if response.status_code == 204:
                     return
-            except (httpx.RequestError, asyncio.TimeoutError) as e:
+            except requests.RequestException as e:
                 logger.warning(f"[Attempt {attempt + 1}/{retries}] Failed to send logs to Loki: {e}")
-                await asyncio.sleep(2 ** attempt)
+                time.sleep(2 ** attempt)
 
         logger.error(f"All {retries} retries failed. Logs not sent to Loki.")

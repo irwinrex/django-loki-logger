@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='loki-django-logger',
-    version='1.0.2',  # Increment version after improvements
+    version='1.0.3',  # Increment version after improvements
     description='Asynchronous Loki logger for Django applications',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',

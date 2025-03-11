@@ -15,16 +15,8 @@ pip install loki-django-logger
 ```
 
 ## Configuration
-### 1. Import the Logger and Middleware
-In your Django project, import the required components in `settings.py`:
 
-```python
-import os  # Required for environment variables
-from loki_django_logger.logger import LokiLoggerHandler
-from loki_django_logger.middleware import LokiLoggerMiddleware
-```
-
-### 2. Add Middleware
+### 1. Add Middleware
 Add the following middleware to your `settings.py`:
 
 ```python
@@ -34,10 +26,15 @@ MIDDLEWARE = [
 ]
 ```
 
-### 3. Add Logging Configuration
+### 2. Add Logging Configuration
 Add the Loki logger configuration in `settings.py`:
 
 ```python
+import os
+import logging
+from loki_django_logger.logger import LokiLoggerHandler
+from loki_django_logger.middleware import LokiLoggerMiddleware
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -45,9 +42,12 @@ LOGGING = {
         "loki": {
             "level": "INFO",
             "class": "loki_django_logger.logger.LokiLoggerHandler",
-            "loki_url": os.getenv("LOKI_URL", "http://localhost:3100/loki/api/v1/push"),
-            "tags": {"app": "django", "environment": "production"},
-            "timeout": os.getenv("LOGGING_TIMEOUT", "1"),
+            "loki_url": os.getenv("LOKI_URL", "https://loki.test.xyz/loki/api/v1/push").rstrip('/'),
+            "tags": {
+                "app": os.getenv("APP_NAME", "test"),
+                "environment": os.getenv("ENVIRONMENT", "test")
+            },
+            "timeout": float(os.getenv("LOGGING_TIMEOUT", "1")),
         },
     },
     "root": {
@@ -57,7 +57,7 @@ LOGGING = {
 }
 ```
 
-### 4. Environment Variables (Optional)
+## Environment Variables (Optional)
 For improved flexibility, consider using environment variables for sensitive information like the `loki_url` or timeout.
 
 ```env
