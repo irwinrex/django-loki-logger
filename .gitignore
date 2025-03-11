@@ -1,2 +1,3 @@
 build/*
 dist/*
+loki_django_logger.egg-info/*
