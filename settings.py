@@ -1,8 +1,4 @@
-# settings.py
-MIDDLEWARE = [
-    ...,
-    "loki_django_logger.middleware.LokiLoggerMiddleware",
-]
+from loki_django_logger.logger import LokiLoggerHandler
 
 LOGGING = {
     "version": 1,
@@ -13,7 +9,7 @@ LOGGING = {
             "class": "loki_django_logger.logger.LokiLoggerHandler",
             "loki_url": "http://localhost:3100/loki/api/v1/push",
             "tags": {"app": "django", "environment": "production"},
-            "timeout": "1",  # Timeout in seconds
+            "timeout": 2.0,  # Custom timeout passed as an argument
         },
     },
     "root": {

@@ -1,4 +1,4 @@
-# Logger.py
+# logger.py
 import logging
 import asyncio
 import httpx
@@ -7,17 +7,12 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-def get_timeout():
-    try:
-        return max(0.1, float(settings.LOGGING["handlers"]["loki"].get("timeout", 1)))
-    except ValueError:
-        return 1.0
-
 class LokiLoggerHandler(logging.Handler):
-    def __init__(self, loki_url, tags=None):
+    def __init__(self, loki_url, tags=None, timeout=1.0):
         super().__init__()
         self.loki_url = loki_url
         self.tags = tags or {"app": "django"}
+        self.timeout = max(0.1, float(timeout))
 
     def emit(self, record):
         log_entry = self.format(record)
@@ -31,7 +26,8 @@ class LokiLoggerHandler(logging.Handler):
                 }
             ]
         }
-        asyncio.create_task(self.send_to_loki(payload))
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.send_to_loki(payload))
 
     async def send_to_loki(self, payload):
         retries = 3
@@ -43,9 +39,9 @@ class LokiLoggerHandler(logging.Handler):
                             self.loki_url,
                             json=payload,
                             headers={"Content-Type": "application/json"},
-                            timeout=get_timeout()
+                            timeout=self.timeout
                         ),
-                        timeout=get_timeout()
+                        timeout=self.timeout
                     )
                     return
             except (httpx.RequestError, asyncio.TimeoutError) as e:
