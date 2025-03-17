@@ -1,94 +1,70 @@
 # Loki Django Logger
 
-Loki Django Logger is a lightweight and efficient logger designed to send logs to Grafana Loki directly from your Django application with minimal latency and low resource consumption. It supports dynamic configurations, timeout management, and efficient logging using `asyncio` and `httpx`.
-
-## Features
-- Asynchronous log transmission for improved performance
-- Configurable timeout to prevent delayed requests
-- Middleware for capturing request/response data with latency tracking
-- Customizable tags for better log organization in Loki
-- Robust error handling with retries and exponential backoff
+This package provides a lightweight logging solution for Django applications that sends logs to Grafana Loki with gzip compression for improved performance.
 
 ## Installation
+
 ```bash
 pip install loki-django-logger
 ```
 
 ## Configuration
 
-### 1. Add Middleware
-Add the following middleware to your `settings.py`:
+1. Add the logger to your Django settings.
+
+In your `settings.py`:
 
 ```python
-MIDDLEWARE = [
-    ...,
-    "loki_django_logger.middleware.LokiLoggerMiddleware",
-]
-```
-
-### 2. Add Logging Configuration
-Add the Loki logger configuration in `settings.py`:
-
-```python
-import os
-import logging
-from loki_django_logger.logger import LokiLoggerHandler
-from loki_django_logger.middleware import LokiLoggerMiddleware
+from loki_django_logger.logger import configure_logger
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {
         "loki": {
-            "level": "INFO",
-            "class": "loki_django_logger.logger.LokiLoggerHandler",
-            "loki_url": os.getenv("LOKI_URL", "https://loki.test.xyz/loki/api/v1/push").rstrip('/'),
-            "tags": {
-                "app": os.getenv("APP_NAME", "test"),
-                "environment": os.getenv("ENVIRONMENT", "test")
-            },
-            "timeout": float(os.getenv("LOGGING_TIMEOUT", "1")),
+            "class": "loki_django_logger.handler.AsyncGzipLokiHandler",
+            "loki_url": "http://localhost:3100",
         },
     },
-    "root": {
-        "handlers": ["loki"],
-        "level": "INFO",
+    "loggers": {
+        "django": {
+            "handlers": ["loki"],
+            "level": "INFO",
+            "propagate": True,
+        },
     },
 }
 ```
 
-## Environment Variables (Optional)
-For improved flexibility, consider using environment variables for sensitive information like the `loki_url` or timeout.
+2. Install Loki if not already available:
 
-```env
-LOKI_URL=http://localhost:3100/loki/api/v1/push
-LOGGING_TIMEOUT=1
+```bash
+docker run -d --name=loki -p 3100:3100 grafana/loki:latest
 ```
 
-## Usage
-Once integrated, logs will automatically be sent to your Loki instance with the following details:
-- API endpoint path
-- HTTP method
-- Response status code
-- Time taken for the request
-- Client IP address
-- User-agent headers for better client identification
+3. Run your Django application and monitor the logs in Loki.
 
-## Example Log Output
-```json
-{
-    "path": "/api/v1/patient",
-    "method": "POST",
-    "status_code": 200,
-    "duration": 0.123,
-    "client_ip": "192.168.1.100",
-    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-}
+## Example Usage
+
+In your Django views or tasks:
+
+```python
+import logging
+logger = logging.getLogger("django")
+
+def sample_view(request):
+    logger.info("Sample log message sent to Loki")
+    return JsonResponse({"message": "Logged successfully!"})
 ```
 
-## Contributing
-Contributions are welcome! Feel free to open issues or submit pull requests.
+## Testing
+
+To run tests:
+
+```bash
+pytest tests/
+```
 
 ## License
-This project is licensed under the MIT License.
 
+This project is licensed under the MIT License. See the `LICENSE` file for details.

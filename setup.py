@@ -1,10 +1,9 @@
-# setup.py
 from setuptools import setup, find_packages
 
 setup(
     name='loki-django-logger',
-    version='1.0.4',  # Increment version after improvements
-    description='Asynchronous Loki logger for Django applications',
+    version='1.0.5',
+    description='Loki logger for Django applications',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     author='Irwin Rex',
@@ -13,7 +12,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'Django>=4.0',
-        'httpx>=0.23.0,<1.0.0'  # Pin version range for compatibility
+        'requests>=2.26.0'
     ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -23,7 +22,7 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Topic :: System :: Logging',
     ],
-    keywords='django loki logger async',
+    keywords='django loki logger async log-aggregation',
     python_requires='>=3.10',
     include_package_data=True,
 )

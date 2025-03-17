@@ -1,6 +1,7 @@
 # __init__.py
-from .logger import LokiLoggerHandler
+from .logger import configure_logger
+from .handler import AsyncGzipLokiHandler
+from .utils import get_system_info
 
-__all__ = ["LokiLoggerHandler", "LokiLoggerMiddleware"]
 
-__version__ = "1.0.4"
+__all__ = ["configure_logger", "AsyncGzipLokiHandler", "get_system_info"]
