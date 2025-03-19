@@ -24,13 +24,16 @@ LOGGING = {
         "loki": {
             "class": "loki_django_logger.handler.AsyncGzipLokiHandler",
             "loki_url": "http://localhost:3100",
+            "labels": {"application": "django-app", "environment": "development"},
+            "flush_interval": 1,
         },
     },
     "loggers": {
         "django": {
             "handlers": ["loki"],
             "level": "INFO",
-            "propagate": True,
+            "propagate": False,
+            "extra": {}  # Add additional metadata here
         },
     },
 }
@@ -53,8 +56,16 @@ import logging
 logger = logging.getLogger("django")
 
 def sample_view(request):
-    logger.info("Sample log message sent to Loki")
+    logger.info("Sample log message sent to Loki", extra={"user_id": 123, "operation": "sample_view"})
     return JsonResponse({"message": "Logged successfully!"})
+```
+
+## Adding Extra Data to Logs
+
+You can provide additional metadata to your logs using the `extra` parameter:
+
+```python
+logger.error("Failed to process request", extra={"user_id": 456, "error_code": "E500"})
 ```
 
 ## Testing
@@ -68,3 +79,4 @@ pytest tests/
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details.
+

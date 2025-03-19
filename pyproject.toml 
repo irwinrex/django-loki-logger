@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "loki_django_logger"
-version = "1.0.5"
+version = "1.0.6"
 description = "Django logger with Gzip Loki integration"
 readme = "README.md"
 authors = [

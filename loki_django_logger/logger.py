@@ -2,25 +2,13 @@
 import logging
 from .handler import AsyncGzipLokiHandler
 
-def configure_logger(loki_url):
+def configure_logger(loki_url, labels=None, flush_interval=5):
     logger = logging.getLogger("django")
     logger.setLevel(logging.INFO)
 
-    handler = AsyncGzipLokiHandler(loki_url)
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    handler.setFormatter(formatter)
+    if not any(isinstance(h, AsyncGzipLokiHandler) for h in logger.handlers):
+        handler = AsyncGzipLokiHandler(loki_url, labels=labels, flush_interval=flush_interval)
+        handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+        logger.addHandler(handler)
 
-    logger.addHandler(handler)
     return logger
-
-# utils.py
-import platform
-import socket
-
-def get_system_info():
-    return {
-        "os": platform.system(),
-        "hostname": socket.gethostname(),
-        "platform_version": platform.version(),
-        "architecture": platform.architecture()[0]
-    }
