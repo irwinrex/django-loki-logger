@@ -6,7 +6,6 @@ import gzip
 import json
 import time
 import traceback
-from user_agents import parse
 
 class AsyncGzipLokiHandler(logging.Handler):
     def __init__(self, loki_url, labels=None, flush_interval=5):
@@ -21,21 +20,28 @@ class AsyncGzipLokiHandler(logging.Handler):
         return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(record.created))
 
     def emit(self, record):
-        if record.name in ["django.request", "django.server"] and record.levelname == "ERROR":
-            return  # Suppress duplicate Django error logs
+        try:
+            log_entry = {
+                "level": record.levelname,
+                "timestamp": self.formatTime(record),
+                "message": record.getMessage(),
+                "module": getattr(record, "module", "Unknown"),
+                "traceback": self._format_exception(record),
+                "status_code": getattr(record, "status_code", "Unknown")
+            }
 
-        log_entry = {
-            "level": record.levelname,
-            "timestamp": self.formatTime(record),
-            "message": record.getMessage(),
-            "module": record.module,
-            "traceback": self._format_exception(record),
-            "status_code": getattr(record, "status_code", "Unknown")
-        }
-        if hasattr(record, 'extra') and isinstance(record.extra, dict):
-            log_entry.update(record.extra)
+            # Add 'extra' details if provided
+            log_entry.update(getattr(record, 'extra', {}))
 
-        self.log_queue.put(log_entry)
+            # Request data for richer context (optional)
+            if hasattr(record, "request"):
+                log_entry["path"] = record.request.get_full_path()
+                log_entry["method"] = record.request.method
+                log_entry["user_agent"] = record.request.META.get("HTTP_USER_AGENT")
+
+            self.log_queue.put(log_entry)
+        except Exception as e:
+            logging.error(f"Failed to emit log: {e}")
 
     def _format_exception(self, record):
         return ''.join(traceback.format_exception(*record.exc_info)) if record.exc_info else None
@@ -74,6 +80,6 @@ class AsyncGzipLokiHandler(logging.Handler):
                                      data=compressed_payload,
                                      headers=headers)
             if response.status_code != 204:
-                print(f"Failed to send logs to Loki: {response.status_code}, {response.text}")
+                logging.error(f"Failed to send logs to Loki: {response.status_code}, {response.text}")
         except Exception as e:
-            print(f"Error sending logs to Loki: {e}")
+            logging.error(f"Error sending logs to Loki: {e}")

@@ -20,17 +20,28 @@ from loki_django_logger.logger import configure_logger
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S"
+        },
+    },
     "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
         "loki": {
             "class": "loki_django_logger.handler.AsyncGzipLokiHandler",
-            "loki_url": "http://localhost:3100",
+            "loki_url": "https://loki.test.dev",
             "labels": {"application": "django-app", "environment": "development"},
+            "level": "DEBUG",
             "flush_interval": 1,
         },
     },
     "loggers": {
         "django": {
-            "handlers": ["loki"],
+            "handlers": ["console", "loki"],
             "level": "INFO",
             "propagate": False,
             "extra": {}  # Add additional metadata here
@@ -79,4 +90,3 @@ pytest tests/
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details.
-
