@@ -8,7 +8,7 @@ setup(
     long_description_content_type='text/markdown',
     author='Irwin Rex',
     author_email='irwinrex.a@gmail.com',
-    url='https://github.com/irwinrex/loki-django-logger',
+    url='https://github.com/irwinrex/django-loki-logger',
     packages=find_packages(),
     install_requires=[
         'Django>=4.0',
