@@ -12,7 +12,7 @@ pip install loki-django-logger
 
 ## ⚙️ Configuration
 
-### 1. Add the logger to your Django settings
+### Add the logger to your Django settings
 
 In your `settings.py` file:
 
@@ -49,13 +49,13 @@ LOGGING = {
 }
 ```
 
-### 2. Install Loki (if not already available)
+### Install Loki (if not already available)
 
 ```bash
 docker run -d --name=loki -p 3100:3100 grafana/loki:latest
 ```
 
-### 3. Run your Django application and monitor the logs in Loki.
+### Run your Django application and monitor the logs in Loki.
 
 ---
 
@@ -70,16 +70,6 @@ logger = logging.getLogger("django")
 def sample_view(request):
     logger.info("Sample log message sent to Loki", extra={"user_id": 123, "operation": "sample_view"})
     return JsonResponse({"message": "Logged successfully!"})
-```
-
----
-
-## ➕ Adding Extra Data to Logs
-
-You can provide additional metadata using the `extra` parameter:
-
-```python
-logger.error("Failed to process request", extra={"user_id": 456, "error_code": "E500"})
 ```
 
 ---

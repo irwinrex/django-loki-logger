@@ -7,6 +7,7 @@ import json
 import time
 import traceback
 from datetime import datetime
+from django.http import HttpRequest  # Moved import outside the class
 
 class AsyncGzipLokiHandler(logging.Handler):
     def __init__(self, loki_url, labels=None, flush_interval=5):
@@ -15,20 +16,33 @@ class AsyncGzipLokiHandler(logging.Handler):
         self.labels = labels or {"job": "django-logs"}
         self.flush_interval = flush_interval
         self.log_queue = queue.Queue()
+
+        # Check Loki connectivity on startup
+        self.test_loki_connection()
+
         threading.Thread(target=self._process_logs, daemon=True).start()
 
-    def formatTime(self, record, datefmt=None):
-        # Python 3.8+ supports `timespec='milliseconds'` for concise ISO 8601 formatting
-        return datetime.utcfromtimestamp(record.created).isoformat(timespec='milliseconds') + 'Z'
+    def test_loki_connection(self):
+        try:
+            response = requests.get(f"{self.loki_url}/ready")
+            if response.status_code == 200:
+                logging.info("✅ Successfully connected to Loki!")
+            else:
+                logging.warning(f"⚠️ Loki connection issue: {response.status_code} - {response.text}")
+        except Exception as e:
+            logging.error(f"❌ Failed to connect to Loki: {e}")
 
-    from django.http import HttpRequest  # Import this for type check
+    def formatTime(self, record, datefmt=None):
+        # Python 3.8 alternative for ISO 8601 timestamp with milliseconds
+        dt = datetime.utcfromtimestamp(record.created)
+        return f"{dt.strftime('%Y-%m-%dT%H:%M:%S')}.{int(dt.microsecond / 1000):03d}Z"
 
     def emit(self, record):
         try:
             log_entry = {
                 "level": record.levelname,
                 "timestamp": self.formatTime(record),
-                "message": record.getMessage(),
+                "message": record.getMessage() if hasattr(record, "getMessage") else str(record.msg),
                 "module": getattr(record, "module", "Unknown"),
                 "traceback": self._format_exception(record),
                 "status_code": getattr(record, "status_code", "Unknown")
@@ -45,7 +59,6 @@ class AsyncGzipLokiHandler(logging.Handler):
             self.log_queue.put(log_entry)
         except Exception as e:
             logging.error(f"Failed to emit log: {e}")
-
 
     def _format_exception(self, record):
         return ''.join(traceback.format_exception(*record.exc_info)) if record.exc_info else None
