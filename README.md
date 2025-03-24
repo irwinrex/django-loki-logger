@@ -1,29 +1,29 @@
 # Loki Django Logger
 
-This package provides a lightweight logging solution for Django applications that sends logs to Grafana Loki with gzip compression for improved performance.
+A lightweight logging solution for Django applications that sends logs to Grafana Loki with gzip compression for improved performance.
 
-## Installation
+## 🚀 Installation
+
+Install the package using pip:
 
 ```bash
 pip install loki-django-logger
 ```
 
-## Configuration
+## ⚙️ Configuration
 
-1. Add the logger to your Django settings.
+### 1. Add the logger to your Django settings
 
-In your `settings.py`:
+In your `settings.py` file:
 
 ```python
-from loki_django_logger.logger import configure_logger
-
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
             "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
-            "datefmt": "%Y-%m-%d %H:%M:%S"
+            "datefmt": "%Y-%m-%d %H:%M:%S",
         },
     },
     "handlers": {
@@ -44,21 +44,22 @@ LOGGING = {
             "handlers": ["console", "loki"],
             "level": "INFO",
             "propagate": False,
-            "extra": {}  # Add additional metadata here
         },
     },
 }
 ```
 
-2. Install Loki if not already available:
+### 2. Install Loki (if not already available)
 
 ```bash
 docker run -d --name=loki -p 3100:3100 grafana/loki:latest
 ```
 
-3. Run your Django application and monitor the logs in Loki.
+### 3. Run your Django application and monitor the logs in Loki.
 
-## Example Usage
+---
+
+## 📝 Example Usage
 
 In your Django views or tasks:
 
@@ -71,15 +72,19 @@ def sample_view(request):
     return JsonResponse({"message": "Logged successfully!"})
 ```
 
-## Adding Extra Data to Logs
+---
 
-You can provide additional metadata to your logs using the `extra` parameter:
+## ➕ Adding Extra Data to Logs
+
+You can provide additional metadata using the `extra` parameter:
 
 ```python
 logger.error("Failed to process request", extra={"user_id": 456, "error_code": "E500"})
 ```
 
-## Testing
+---
+
+## 🧪 Testing
 
 To run tests:
 
@@ -87,6 +92,9 @@ To run tests:
 pytest tests/
 ```
 
-## License
+---
+
+## 📜 License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details.
+

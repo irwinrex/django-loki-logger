@@ -6,6 +6,7 @@ import gzip
 import json
 import time
 import traceback
+from datetime import datetime
 
 class AsyncGzipLokiHandler(logging.Handler):
     def __init__(self, loki_url, labels=None, flush_interval=5):
@@ -17,7 +18,10 @@ class AsyncGzipLokiHandler(logging.Handler):
         threading.Thread(target=self._process_logs, daemon=True).start()
 
     def formatTime(self, record, datefmt=None):
-        return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(record.created))
+        # Python 3.8+ supports `timespec='milliseconds'` for concise ISO 8601 formatting
+        return datetime.utcfromtimestamp(record.created).isoformat(timespec='milliseconds') + 'Z'
+
+    from django.http import HttpRequest  # Import this for type check
 
     def emit(self, record):
         try:
@@ -30,18 +34,18 @@ class AsyncGzipLokiHandler(logging.Handler):
                 "status_code": getattr(record, "status_code", "Unknown")
             }
 
-            # Add 'extra' details if provided
             log_entry.update(getattr(record, 'extra', {}))
 
-            # Request data for richer context (optional)
-            if hasattr(record, "request"):
+            # Check if `record.request` is a Django HttpRequest object
+            if hasattr(record, "request") and isinstance(record.request, HttpRequest):
                 log_entry["path"] = record.request.get_full_path()
                 log_entry["method"] = record.request.method
-                log_entry["user_agent"] = record.request.META.get("HTTP_USER_AGENT")
+                log_entry["user_agent"] = record.request.META.get("HTTP_USER_AGENT", "Unknown")
 
             self.log_queue.put(log_entry)
         except Exception as e:
             logging.error(f"Failed to emit log: {e}")
+
 
     def _format_exception(self, record):
         return ''.join(traceback.format_exception(*record.exc_info)) if record.exc_info else None
